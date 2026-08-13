@@ -3,85 +3,1200 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MAKO Orders</title>
+  <title>MAKO Admin Orders</title>
+
   <style>
-    body{font-family:Arial,sans-serif;background:#f7f3ef;margin:0;padding:25px;color:#222}
-    h1{margin-bottom:5px}
-    button{background:#e85d04;color:white;border:0;padding:10px 18px;border-radius:8px;cursor:pointer}
-    .status{margin:15px 0;padding:12px;background:white;border-radius:10px}
-    .order{background:white;margin:15px 0;padding:18px;border-radius:12px;box-shadow:0 2px 8px #ddd}
-    .row{margin:6px 0}
-    .label{font-weight:bold}
-    pre{white-space:pre-wrap;word-break:break-word}
+    *{box-sizing:border-box}
+
+    body{
+      font-family:Arial,sans-serif;
+      background:#f7f3ef;
+      margin:0;
+      padding:25px;
+      color:#222
+    }
+
+    h1{margin:0 0 5px}
+
+    button{
+      border:0;
+      padding:10px 18px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:bold
+    }
+
+    .primary{
+      background:#e85d04;
+      color:white
+    }
+
+    .dark{
+      background:#222;
+      color:white
+    }
+
+    .danger{
+      background:#b42318;
+      color:white
+    }
+
+    .status{
+      margin:15px 0;
+      padding:14px;
+      background:white;
+      border-radius:10px;
+      box-shadow:0 2px 8px #ddd
+    }
+
+    .order{
+      background:white;
+      margin:15px 0;
+      padding:20px;
+      border-radius:14px;
+      box-shadow:0 2px 8px #ddd
+    }
+
+    .order-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      border-bottom:1px solid #eee;
+      padding-bottom:12px;
+      margin-bottom:15px
+    }
+
+    .order-id{
+      font-size:20px;
+      font-weight:bold
+    }
+
+    .row{
+      margin:8px 0;
+      line-height:1.5
+    }
+
+    .label{
+      font-weight:bold
+    }
+
+    .badge{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:20px;
+      background:#eee;
+      font-size:12px;
+      font-weight:bold
+    }
+
+    .paid{
+      background:#d1fae5;
+      color:#065f46
+    }
+
+    .pending{
+      background:#fef3c7;
+      color:#92400e
+    }
+
+    .cancelled{
+      background:#fee2e2;
+      color:#991b1b
+    }
+
+    .items{
+      margin-top:15px;
+      padding:15px;
+      background:#fafafa;
+      border-radius:10px
+    }
+
+    .item{
+      padding:8px 0;
+      border-bottom:1px solid #eee
+    }
+
+    .item:last-child{
+      border-bottom:0
+    }
+
+    .actions{
+      margin-top:18px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap
+    }
+
+    select{
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #ccc
+    }
+
+    .login{
+      max-width:400px;
+      margin:80px auto;
+      background:white;
+      padding:30px;
+      border-radius:15px;
+      box-shadow:0 4px 20px #ddd
+    }
+
+    input{
+      width:100%;
+      padding:12px;
+      margin:8px 0 15px;
+      border:1px solid #ccc;
+      border-radius:8px
+    }
+
+    .login button{
+      width:100%
+    }
+
+    .hidden{
+      display:none
+    }
+
+    .error{
+      color:#b42318;
+      font-weight:bold;
+      margin:10px 0
+    }
+
+    .success{
+      color:#067647;
+      font-weight:bold
+    }
+
+    .top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:15px;
+      flex-wrap:wrap
+    }
+
+    @media(max-width:600px){
+      body{padding:15px}
+    }
   </style>
 </head>
 
 <body>
 
-<h1>MAKO Orders</h1>
-<p>Admin Order Dashboard</p>
+<!-- LOGIN -->
 
-<button onclick="loadOrders()">Refresh Orders</button>
+<div id="loginBox" class="login">
 
-<div id="status" class="status">Loading orders...</div>
-<div id="orders"></div>
+  <h2>MAKO Admin</h2>
+  <p>Login to view and manage orders.</p>
+
+  <input
+    id="email"
+    type="email"
+    placeholder="Admin email"
+  >
+
+  <input
+    id="password"
+    type="password"
+    placeholder="Password"
+  >
+
+  <div id="loginMessage"></div>
+
+  <button class="primary" onclick="login()">
+    Login
+  </button>
+
+</div>
+
+
+<!-- 2FA -->
+
+<div id="twoFABox" class="login hidden">
+
+  <h2>Two-Factor Authentication</h2>
+
+  <p>Enter your 6-digit authenticator code.</p>
+
+  <input
+    id="twoFACode"
+    type="text"
+    maxlength="6"
+    inputmode="numeric"
+    placeholder="6-digit code"
+  >
+
+  <div id="twoFAMessage"></div>
+
+  <button class="primary" onclick="verify2FA()">
+    Verify
+  </button>
+
+</div>
+
+
+<!-- DASHBOARD -->
+
+<div id="dashboard" class="hidden">
+
+  <div class="top">
+
+    <div>
+      <h1>MAKO Orders</h1>
+      <p>Admin Order Dashboard</p>
+    </div>
+
+    <div>
+
+      <button
+        class="primary"
+        onclick="loadOrders()"
+      >
+        Refresh Orders
+      </button>
+
+      <button
+        class="dark"
+        onclick="logout()"
+      >
+        Logout
+      </button>
+
+    </div>
+
+  </div>
+
+  <div id="status" class="status">
+    Loading orders...
+  </div>
+
+  <div id="orders"></div>
+
+</div>
+
 
 <script>
-const API = "https://mako-backend.onrender.com";
 
-async function loadOrders() {
-  const status = document.getElementById("status");
-  const container = document.getElementById("orders");
+const API =
+  "https://mako-backendd.onrender.com";
 
-  status.innerText = "Loading...";
-  container.innerHTML = "";
+let token =
+  localStorage.getItem("mako_admin_token");
 
-  try {
-    const response = await fetch(API + "/api/orders");
+let preToken = null;
 
-    if (!response.ok) {
-      throw new Error("API returned " + response.status);
+
+/* =========================
+   SHOW SCREENS
+========================= */
+
+function showLogin(){
+
+  document
+    .getElementById("loginBox")
+    .classList.remove("hidden");
+
+  document
+    .getElementById("twoFABox")
+    .classList.add("hidden");
+
+  document
+    .getElementById("dashboard")
+    .classList.add("hidden");
+
+}
+
+
+function show2FA(){
+
+  document
+    .getElementById("loginBox")
+    .classList.add("hidden");
+
+  document
+    .getElementById("twoFABox")
+    .classList.remove("hidden");
+
+  document
+    .getElementById("dashboard")
+    .classList.add("hidden");
+
+}
+
+
+function showDashboard(){
+
+  document
+    .getElementById("loginBox")
+    .classList.add("hidden");
+
+  document
+    .getElementById("twoFABox")
+    .classList.add("hidden");
+
+  document
+    .getElementById("dashboard")
+    .classList.remove("hidden");
+
+}
+
+
+/* =========================
+   LOGIN
+========================= */
+
+async function login(){
+
+  const email =
+    document.getElementById("email").value.trim();
+
+  const password =
+    document.getElementById("password").value;
+
+  const message =
+    document.getElementById("loginMessage");
+
+  message.className = "";
+  message.innerText = "Logging in...";
+
+  if(!email || !password){
+
+    message.className = "error";
+    message.innerText =
+      "Please enter email and password.";
+
+    return;
+  }
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/api/auth/login",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+
+          body:JSON.stringify({
+            email:email,
+            password:password
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(!response.ok){
+
+      throw new Error(
+        data.detail ||
+        "Login failed"
+      );
+
     }
 
-    const data = await response.json();
+    if(data.require_2fa){
 
-    const orders = Array.isArray(data)
-      ? data
-      : (data.orders || data.items || []);
+      preToken =
+        data.pre_token;
 
-    status.innerText = orders.length + " order(s) found";
+      show2FA();
 
-    if (!orders.length) {
-      container.innerHTML = "<div class='order'>No orders found.</div>";
       return;
     }
 
-    orders.forEach(order => {
-      const box = document.createElement("div");
-      box.className = "order";
+    if(!data.token){
 
-      box.innerHTML = `
-        <div class="row"><span class="label">Order ID:</span> ${order.id || "-"}</div>
-        <div class="row"><span class="label">Customer:</span> ${order.name || order.customer_name || "-"}</div>
-        <div class="row"><span class="label">Phone:</span> ${order.phone || "-"}</div>
-        <div class="row"><span class="label">Email:</span> ${order.email || "-"}</div>
-        <div class="row"><span class="label">Address:</span> ${order.address || "-"}</div>
-        <div class="row"><span class="label">Total:</span> ₹${order.total || order.amount || "-"}</div>
-        <div class="row"><span class="label">Status:</span> ${order.status || "-"}</div>
-        <pre>${JSON.stringify(order, null, 2)}</pre>
-      `;
+      throw new Error(
+        "No login token received."
+      );
 
-      container.appendChild(box);
-    });
+    }
 
-  } catch (error) {
-    status.innerText = "ERROR: " + error.message;
-    container.innerHTML =
-      "<div class='order'>Could not load orders. Check the backend API.</div>";
+    token = data.token;
+
+    localStorage.setItem(
+      "mako_admin_token",
+      token
+    );
+
+    showDashboard();
+
+    loadOrders();
+
+  }catch(error){
+
+    message.className = "error";
+
+    message.innerText =
+      error.message;
+
   }
+
 }
 
-loadOrders();
+
+/* =========================
+   2FA
+========================= */
+
+async function verify2FA(){
+
+  const code =
+    document
+      .getElementById("twoFACode")
+      .value.trim();
+
+  const message =
+    document.getElementById("twoFAMessage");
+
+  message.className = "";
+  message.innerText =
+    "Verifying...";
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/api/auth/verify-2fa",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              "Bearer " + preToken
+          },
+
+          body:JSON.stringify({
+            code:code
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(!response.ok){
+
+      throw new Error(
+        data.detail ||
+        "Invalid 2FA code"
+      );
+
+    }
+
+    token =
+      data.token;
+
+    localStorage.setItem(
+      "mako_admin_token",
+      token
+    );
+
+    preToken = null;
+
+    showDashboard();
+
+    loadOrders();
+
+  }catch(error){
+
+    message.className =
+      "error";
+
+    message.innerText =
+      error.message;
+
+  }
+
+}
+
+
+/* =========================
+   LOAD ORDERS
+========================= */
+
+async function loadOrders(){
+
+  const status =
+    document.getElementById("status");
+
+  const container =
+    document.getElementById("orders");
+
+  if(!token){
+
+    showLogin();
+
+    return;
+  }
+
+  status.innerText =
+    "Loading orders...";
+
+  status.className =
+    "status";
+
+  container.innerHTML = "";
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/api/admin/orders",
+        {
+          method:"GET",
+
+          headers:{
+            "Authorization":
+              "Bearer " + token
+          }
+        }
+      );
+
+    if(response.status === 401){
+
+      localStorage.removeItem(
+        "mako_admin_token"
+      );
+
+      token = null;
+
+      showLogin();
+
+      throw new Error(
+        "Session expired. Please login again."
+      );
+
+    }
+
+    const data =
+      await response.json();
+
+    if(!response.ok){
+
+      throw new Error(
+        data.detail ||
+        "API error " +
+        response.status
+      );
+
+    }
+
+    const orders =
+      Array.isArray(data)
+        ? data
+        : (
+            data.orders ||
+            data.items ||
+            []
+          );
+
+    status.innerText =
+      orders.length +
+      " order(s) found";
+
+    if(!orders.length){
+
+      container.innerHTML =
+        "<div class='order'>No orders found.</div>";
+
+      return;
+    }
+
+    orders.forEach(
+      order => {
+
+        container.appendChild(
+          createOrder(order)
+        );
+
+      }
+    );
+
+  }catch(error){
+
+    status.className =
+      "status error";
+
+    status.innerText =
+      error.message;
+
+  }
+
+}
+
+
+/* =========================
+   CREATE ORDER CARD
+========================= */
+
+function createOrder(order){
+
+  const box =
+    document.createElement("div");
+
+  box.className =
+    "order";
+
+  const id =
+    order.id ||
+    order.order_id ||
+    "-";
+
+  const customer =
+    order.customer_name ||
+    order.name ||
+    order.shipping?.full_name ||
+    "-";
+
+  const phone =
+    order.phone ||
+    order.shipping?.mobile ||
+    "-";
+
+  const email =
+    order.email ||
+    order.shipping?.email ||
+    "-";
+
+  const address =
+    order.address ||
+    order.shipping?.address ||
+    "-";
+
+  const total =
+    order.total ??
+    order.amount ??
+    0;
+
+  const status =
+    order.status ||
+    "UNKNOWN";
+
+  const payment =
+    order.payment_status ||
+    "UNKNOWN";
+
+  let badge =
+    "badge pending";
+
+  if(payment === "PAID"){
+    badge =
+      "badge paid";
+  }
+
+  if(status === "CANCELLED"){
+    badge =
+      "badge cancelled";
+  }
+
+  let items = "";
+
+  if(
+    Array.isArray(order.items)
+  ){
+
+    items =
+      order.items
+        .map(item => `
+          <div class="item">
+            <strong>
+              ${safe(item.name)}
+            </strong>
+            <br>
+            Qty:
+            ${safe(item.quantity)}
+            × ₹${safe(item.price)}
+          </div>
+        `)
+        .join("");
+
+  }
+
+  box.innerHTML = `
+
+    <div class="order-header">
+
+      <div class="order-id">
+        ${safe(id)}
+      </div>
+
+      <span class="${badge}">
+        ${safe(status)}
+      </span>
+
+    </div>
+
+
+    <div class="row">
+      <span class="label">
+        Customer:
+      </span>
+      ${safe(customer)}
+    </div>
+
+
+    <div class="row">
+      <span class="label">
+        Phone:
+      </span>
+      ${safe(phone)}
+    </div>
+
+
+    <div class="row">
+      <span class="label">
+        Email:
+      </span>
+      ${safe(email)}
+    </div>
+
+
+    <div class="row">
+      <span class="label">
+        Address:
+      </span>
+      ${safe(address)}
+    </div>
+
+
+    <div class="row">
+      <span class="label">
+        Total:
+      </span>
+      ₹${safe(total)}
+    </div>
+
+
+    <div class="row">
+      <span class="label">
+        Payment:
+      </span>
+
+      <span class="badge ${
+        payment === "PAID"
+          ? "paid"
+          : "pending"
+      }">
+
+        ${safe(payment)}
+
+      </span>
+
+    </div>
+
+
+    <div class="row">
+      <span class="label">
+        UTR:
+      </span>
+      ${safe(order.utr_reference)}
+    </div>
+
+
+    <div class="items">
+
+      <strong>
+        Products
+      </strong>
+
+      ${
+        items ||
+        "<div>No product details.</div>"
+      }
+
+    </div>
+
+
+    <div class="actions">
+
+      <select id="status-${safe(id)}">
+
+        <option value="">
+          Change status
+        </option>
+
+        <option value="ORDER_RECEIVED">
+          Order Received
+        </option>
+
+        <option value="PAYMENT_CONFIRMED">
+          Payment Confirmed
+        </option>
+
+        <option value="ORDER_CONFIRMED">
+          Order Confirmed
+        </option>
+
+        <option value="PROCESSING">
+          Processing
+        </option>
+
+        <option value="SHIPPED">
+          Shipped
+        </option>
+
+        <option value="DELIVERED">
+          Delivered
+        </option>
+
+        <option value="CANCELLED">
+          Cancelled
+        </option>
+
+      </select>
+
+
+      <button
+        class="primary"
+        onclick="updateStatus('${js(id)}')"
+      >
+        Update Status
+      </button>
+
+
+      <button
+        class="dark"
+        onclick="markPaid('${js(id)}')"
+      >
+        Mark Paid
+      </button>
+
+
+      <button
+        class="primary"
+        onclick="downloadInvoice('${js(id)}')"
+      >
+        Invoice PDF
+      </button>
+
+    </div>
+
+  `;
+
+  return box;
+
+}
+
+
+/* =========================
+   SAFE HTML
+========================= */
+
+function safe(value){
+
+  if(
+    value === null ||
+    value === undefined
+  ){
+    return "-";
+  }
+
+  return String(value)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+
+}
+
+
+function js(value){
+
+  return String(value || "")
+    .replace(/\\/g,"\\\\")
+    .replace(/'/g,"\\'");
+
+}
+
+
+/* =========================
+   MARK PAID
+========================= */
+
+async function markPaid(id){
+
+  const utr =
+    prompt(
+      "Enter UTR / payment reference:"
+    );
+
+  if(utr === null){
+    return;
+  }
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/api/admin/orders/" +
+        encodeURIComponent(id) +
+        "/mark-paid",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              "Bearer " + token
+          },
+
+          body:JSON.stringify({
+            utr_reference:utr,
+            payment_method:"UPI"
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(!response.ok){
+
+      throw new Error(
+        data.detail ||
+        "Could not mark payment."
+      );
+
+    }
+
+    alert(
+      "Payment marked as PAID."
+    );
+
+    loadOrders();
+
+  }catch(error){
+
+    alert(
+      "Payment error: " +
+      error.message
+    );
+
+  }
+
+}
+
+
+/* =========================
+   UPDATE STATUS
+========================= */
+
+async function updateStatus(id){
+
+  const select =
+    document.getElementById(
+      "status-" + id
+    );
+
+  const newStatus =
+    select.value;
+
+  if(!newStatus){
+
+    alert(
+      "Please select a status."
+    );
+
+    return;
+  }
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/api/admin/orders/" +
+        encodeURIComponent(id) +
+        "/status",
+        {
+          method:"PATCH",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              "Bearer " + token
+          },
+
+          body:JSON.stringify({
+            status:newStatus
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(!response.ok){
+
+      throw new Error(
+        data.detail ||
+        "Could not update status."
+      );
+
+    }
+
+    alert(
+      "Order status updated."
+    );
+
+    loadOrders();
+
+  }catch(error){
+
+    alert(
+      "Status error: " +
+      error.message
+    );
+
+  }
+
+}
+
+
+/* =========================
+   INVOICE
+========================= */
+
+async function downloadInvoice(id){
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/api/admin/orders/" +
+        encodeURIComponent(id) +
+        "/invoice",
+        {
+          method:"GET",
+
+          headers:{
+            "Authorization":
+              "Bearer " + token
+          }
+        }
+      );
+
+    if(!response.ok){
+
+      throw new Error(
+        "Invoice API returned " +
+        response.status
+      );
+
+    }
+
+    const blob =
+      await response.blob();
+
+    const url =
+      window.URL.createObjectURL(
+        blob
+      );
+
+    const a =
+      document.createElement("a");
+
+    a.href = url;
+
+    a.download =
+      "MAKO-" +
+      id +
+      "-invoice.pdf";
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+    window.URL.revokeObjectURL(url);
+
+  }catch(error){
+
+    alert(
+      "Invoice error: " +
+      error.message
+    );
+
+  }
+
+}
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+async function logout(){
+
+  try{
+
+    if(token){
+
+      await fetch(
+        API + "/api/auth/logout",
+        {
+          method:"POST",
+
+          headers:{
+            "Authorization":
+              "Bearer " + token
+          }
+        }
+      );
+
+    }
+
+  }catch(e){}
+
+  localStorage.removeItem(
+    "mako_admin_token"
+  );
+
+  token = null;
+
+  showLogin();
+
+}
+
+
+/* =========================
+   START
+========================= */
+
+if(token){
+
+  showDashboard();
+
+  loadOrders();
+
+}else{
+
+  showLogin();
+
+}
+
 </script>
 
 </body>
