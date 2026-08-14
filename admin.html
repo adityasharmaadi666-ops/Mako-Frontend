@@ -883,6 +883,13 @@ function createOrder(order){
         Invoice PDF
       </button>
 
+      <button
+        class="primary"
+        onclick="openWhatsApp('${js(phone)}','${js(id)}','${js(total)}')"
+      >
+        WhatsApp Customer
+      </button>
+
     </div>
 
   `;
@@ -1089,7 +1096,6 @@ async function downloadInvoice(id){
         "/invoice",
         {
           method:"GET",
-
           headers:{
             "Authorization":
               "Bearer " + token
@@ -1099,113 +1105,70 @@ async function downloadInvoice(id){
 
     if(!response.ok){
 
-      let errorMessage =
+      let message =
         "Invoice API returned " +
         response.status;
 
       try{
-
-        const errorText =
-          await response.text();
+        const text = await response.text();
 
         try{
-
-          const errorData =
-            JSON.parse(errorText);
-
-          errorMessage =
-            errorData.detail ||
-            errorData.message ||
-            errorMessage;
-
+          const data = JSON.parse(text);
+          message =
+            data.detail ||
+            data.message ||
+            message;
         }catch(e){
-
-          if(errorText.trim()){
-            errorMessage =
-              errorText.trim().slice(0,300);
+          if(text.trim()){
+            message = text.trim().slice(0,300);
           }
-
         }
-
       }catch(e){}
 
-      throw new Error(errorMessage);
+      throw new Error(message);
     }
 
-    /*
-      Read the response body ONLY ONCE.
-      This prevents the "body stream already read"
-      error from the previous invoice code.
-    */
+    /* Read the response body exactly once. */
     const pdfBytes =
       await response.arrayBuffer();
 
-    if(
-      !pdfBytes ||
-      pdfBytes.byteLength === 0
-    ){
-
-      throw new Error(
-        "Invoice PDF is empty."
-      );
-
+    if(!pdfBytes || pdfBytes.byteLength === 0){
+      throw new Error("Invoice PDF is empty.");
     }
 
     const contentType =
-      response.headers.get(
-        "content-type"
-      ) || "";
+      response.headers.get("content-type") || "";
 
-    /*
-      Make sure the backend returned a PDF.
-    */
     if(
-      !contentType
-        .toLowerCase()
-        .includes("application/pdf") &&
-      !contentType
-        .toLowerCase()
-        .includes("octet-stream")
+      !contentType.toLowerCase().includes("application/pdf") &&
+      !contentType.toLowerCase().includes("octet-stream")
     ){
 
       const text =
-        new TextDecoder()
-          .decode(pdfBytes);
+        new TextDecoder().decode(pdfBytes);
 
       let message =
         "Invoice endpoint did not return a PDF.";
 
       try{
-
-        const errorData =
-          JSON.parse(text);
-
+        const data = JSON.parse(text);
         message =
-          errorData.detail ||
-          errorData.message ||
+          data.detail ||
+          data.message ||
           message;
-
       }catch(e){
-
         if(text.trim()){
-          message =
-            text.trim().slice(0,300);
+          message = text.trim().slice(0,300);
         }
-
       }
 
       throw new Error(message);
     }
 
-    /*
-      Create PDF blob.
-    */
     const blob =
       new Blob(
         [pdfBytes],
-        {
-          type:"application/pdf"
-        }
+        {type:"application/pdf"}
       );
 
     const url =
@@ -1215,25 +1178,16 @@ async function downloadInvoice(id){
       document.createElement("a");
 
     a.href = url;
-
     a.download =
-      "MAKO-" +
-      id +
-      "-invoice.pdf";
-
-    a.style.display =
-      "none";
+      "MAKO-" + id + "-invoice.pdf";
+    a.style.display = "none";
 
     document.body.appendChild(a);
-
     a.click();
 
     setTimeout(() => {
-
       a.remove();
-
       window.URL.revokeObjectURL(url);
-
     },1000);
 
   }catch(error){
@@ -1244,6 +1198,56 @@ async function downloadInvoice(id){
     );
 
   }
+
+}
+
+
+/* =========================
+   WHATSAPP CUSTOMER
+========================= */
+
+function openWhatsApp(phone,id,total){
+
+  let number =
+    String(phone || "")
+      .replace(/\D/g,"");
+
+  if(number.length === 10){
+    number = "91" + number;
+  }else if(
+    number.length === 11 &&
+    number.startsWith("0")
+  ){
+    number =
+      "91" + number.substring(1);
+  }
+
+  if(!number || number.length < 10){
+
+    alert(
+      "Customer phone number is not available."
+    );
+
+    return;
+  }
+
+  const message =
+    "Hi! This is MAKO from The Lotus Seed Co.%0A%0A" +
+    "Your order " +
+    encodeURIComponent(id) +
+    " has been received.%0A" +
+    "Order total: ₹" +
+    encodeURIComponent(total) +
+    "%0A%0A" +
+    "Thank you for choosing MAKO!";
+
+  window.open(
+    "https://wa.me/" +
+    number +
+    "?text=" +
+    message,
+    "_blank"
+  );
 
 }
 
