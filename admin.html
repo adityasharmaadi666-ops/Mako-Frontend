@@ -1099,20 +1099,117 @@ async function downloadInvoice(id){
 
     if(!response.ok){
 
-      throw new Error(
+      let errorMessage =
         "Invoice API returned " +
-        response.status
+        response.status;
+
+      try{
+
+        const errorText =
+          await response.text();
+
+        try{
+
+          const errorData =
+            JSON.parse(errorText);
+
+          errorMessage =
+            errorData.detail ||
+            errorData.message ||
+            errorMessage;
+
+        }catch(e){
+
+          if(errorText.trim()){
+            errorMessage =
+              errorText.trim().slice(0,300);
+          }
+
+        }
+
+      }catch(e){}
+
+      throw new Error(errorMessage);
+    }
+
+    /*
+      Read the response body ONLY ONCE.
+      This prevents the "body stream already read"
+      error from the previous invoice code.
+    */
+    const pdfBytes =
+      await response.arrayBuffer();
+
+    if(
+      !pdfBytes ||
+      pdfBytes.byteLength === 0
+    ){
+
+      throw new Error(
+        "Invoice PDF is empty."
       );
 
     }
 
+    const contentType =
+      response.headers.get(
+        "content-type"
+      ) || "";
+
+    /*
+      Make sure the backend returned a PDF.
+    */
+    if(
+      !contentType
+        .toLowerCase()
+        .includes("application/pdf") &&
+      !contentType
+        .toLowerCase()
+        .includes("octet-stream")
+    ){
+
+      const text =
+        new TextDecoder()
+          .decode(pdfBytes);
+
+      let message =
+        "Invoice endpoint did not return a PDF.";
+
+      try{
+
+        const errorData =
+          JSON.parse(text);
+
+        message =
+          errorData.detail ||
+          errorData.message ||
+          message;
+
+      }catch(e){
+
+        if(text.trim()){
+          message =
+            text.trim().slice(0,300);
+        }
+
+      }
+
+      throw new Error(message);
+    }
+
+    /*
+      Create PDF blob.
+    */
     const blob =
-      await response.blob();
+      new Blob(
+        [pdfBytes],
+        {
+          type:"application/pdf"
+        }
+      );
 
     const url =
-      window.URL.createObjectURL(
-        blob
-      );
+      window.URL.createObjectURL(blob);
 
     const a =
       document.createElement("a");
@@ -1124,13 +1221,20 @@ async function downloadInvoice(id){
       id +
       "-invoice.pdf";
 
+    a.style.display =
+      "none";
+
     document.body.appendChild(a);
 
     a.click();
 
-    a.remove();
+    setTimeout(() => {
 
-    window.URL.revokeObjectURL(url);
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+
+    },1000);
 
   }catch(error){
 
